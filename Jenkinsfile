@@ -19,14 +19,31 @@ pipeline {
                 archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
             }
         }
+
+        stage('Upload to Nexus') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'nexus-credentials',
+                    usernameVariable: 'NEXUS_USER',
+                    passwordVariable: 'NEXUS_PASS'
+                )]) {
+                    sh '''
+                        curl --fail --show-error --silent \
+                          --user "$NEXUS_USER:$NEXUS_PASS" \
+                          --upload-file target/spring-boot-complete-1.0.0.jar \
+                          http://nexus:8081/repository/hw8-releases/com/example/spring-boot-complete/1.0.0/spring-boot-complete-1.0.0.jar
+                    '''
+                }
+            }
+        }
     }
 
     post {
         success {
-            echo 'Spring Boot build successful!'
+            echo 'Build and Nexus upload successful!'
         }
         failure {
-            echo 'Build failed!'
+            echo 'Pipeline failed!'
         }
     }
 }
